@@ -37,6 +37,7 @@ def main():
         screen.fill((200, 220, 255))
         level.draw(screen)
         all_sprites.draw(screen)
+        player.draw_trail(screen)
 
         pygame.display.flip()
 

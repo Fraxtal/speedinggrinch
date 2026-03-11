@@ -1,4 +1,5 @@
 import pygame
+import collections
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -27,6 +28,10 @@ class Player(pygame.sprite.Sprite):
         self._dash_timer = 0.0
         self._dash_cd_timer = 0.0
         self.dashing = False
+
+        #trailing
+        self.trail_length = 10
+        self.trail_pos = collections.deque(maxlen=self.trail_length)
 
     def handle_input(self, keys):
         self.acc.x = 0
@@ -85,6 +90,23 @@ class Player(pygame.sprite.Sprite):
 
         if self._dash_cd_timer > 0:
             self._dash_cd_timer -= dt
+
+        # constant deceleration
+        self.vel.x += (0 - self.vel.x)/20
+
+    #trailing
+    def draw_trail(player, screen):
+                player.trail_pos.append(player.rect.center)
+                for i, pos in enumerate(player.trail_pos):
+                    ratio = int(255 * (i / player.trail_length))
+                    trail_img = player.image.copy()
+                    color_mask = pygame.Surface(trail_img.get_size(), pygame.SRCALPHA)
+                    color_mask.fill((ratio, ratio, 255, 255))
+                    trail_img.blit(color_mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+                    trail_img.set_alpha(ratio)
+                    
+                    trail_rect = trail_img.get_rect(center=pos)
+                    screen.blit(trail_img, trail_rect)
 
     def _collide_axis(self, platforms, axis):
         for p in platforms:
