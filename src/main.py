@@ -10,12 +10,14 @@ def main():
     screen = pygame.display.set_mode((W, H))
     pygame.display.set_caption('speedinggrinch')
     clock = pygame.time.Clock()
-
+    
     level = Level()
     player = Player(120, H - 200)
 
     all_sprites = pygame.sprite.Group()
     all_sprites.add(player)
+
+    clock.tick()
 
     running = True
     while running:
@@ -36,8 +38,8 @@ def main():
 
         screen.fill((200, 220, 255))
         level.draw(screen)
+        player.draw_effects(screen)
         all_sprites.draw(screen)
-        player.draw_trail(screen)
 
         pygame.display.flip()
 

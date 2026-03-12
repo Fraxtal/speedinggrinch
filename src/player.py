@@ -1,17 +1,44 @@
 import pygame
 import collections
+from pathlib import Path
+from effects import Effects
+from enum import Enum, auto
+
+class PlayerState(Enum):
+    IDLE = auto()
+    RUN = auto()
+    JUMP = auto()
+    FALL = auto()
+    HURT = auto()
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((36, 64), pygame.SRCALPHA)
-        pygame.draw.rect(self.image, (200, 40, 40), (0, 0, 36, 64))
+        self.image = pygame.image.load("asset\\Sprite\\Idle\\0_Forest_Ranger_Idle_000.png").convert_alpha()
+        self.image = pygame.transform.scale_by(self.image, 0.1)
+        bound = 15
+        width, height = self.image.get_size()
+        self.image = self.image.subsurface(pygame.Rect(bound, bound, width - 2*bound, height - 2*bound))
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.effect = Effects(self)
+
+        # animations
+        self.animations = {}
+        self.state = PlayerState.IDLE
+        base_folder = Path("asset")
+        for image_pth in base_folder.rglob("*.png"):
+            folder_name = image_pth.parent.name
+            if folder_name not in self.animations:
+                self.animations[folder_name] = []
+            img = self.image_tranformer(str(image_pth), 0.1, bound)
+            self.animations[folder_name].append(img)
+        self.frame_count = 0
 
         self.pos = pygame.math.Vector2(x, y)
         self.vel = pygame.math.Vector2(0, 0)
         self.acc = pygame.math.Vector2(0, 0)
 
+        self.facing = 1
         self.speed = 1600.0  # acceleration
         self.max_walk = 420.0
         self.friction = -12.0
@@ -29,10 +56,6 @@ class Player(pygame.sprite.Sprite):
         self._dash_cd_timer = 0.0
         self.dashing = False
 
-        #trailing
-        self.trail_length = 10
-        self.trail_pos = collections.deque(maxlen=self.trail_length)
-
     def handle_input(self, keys):
         self.acc.x = 0
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
@@ -47,9 +70,11 @@ class Player(pygame.sprite.Sprite):
             self.vel.y = -self.jump_strength
             self.on_ground = False
             self.can_double_jump = True
+            self.state = PlayerState.JUMP
         elif self.can_double_jump:
             self.vel.y = -self.jump_strength * 0.9
             self.can_double_jump = False
+            self.state = PlayerState.JUMP
 
     def try_dash(self, dir_x):
         if self._dash_cd_timer <= 0 and not self.dashing:
@@ -94,19 +119,40 @@ class Player(pygame.sprite.Sprite):
         # constant deceleration
         self.vel.x += (0 - self.vel.x)/20
 
-    #trailing
-    def draw_trail(player, screen):
-                player.trail_pos.append(player.rect.center)
-                for i, pos in enumerate(player.trail_pos):
-                    ratio = int(255 * (i / player.trail_length))
-                    trail_img = player.image.copy()
-                    color_mask = pygame.Surface(trail_img.get_size(), pygame.SRCALPHA)
-                    color_mask.fill((ratio, ratio, 255, 255))
-                    trail_img.blit(color_mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-                    trail_img.set_alpha(ratio)
-                    
-                    trail_rect = trail_img.get_rect(center=pos)
-                    screen.blit(trail_img, trail_rect)
+        # update state and animation
+        self.update_state()
+        self.update_animations()
+        self.frame_count += 0.5
+
+    def update_state(self):
+        if self.on_ground:
+            self.state = PlayerState.IDLE if abs(self.vel.x) <= 20 else PlayerState.RUN
+            return
+        if self.vel.y > 0:
+            self.state = PlayerState.FALL
+            return
+
+    def update_animations(self):
+        if self.dashing:
+            animations = self.animations["dash"]
+        else:
+            animations = self.animations[self.state.name.lower()]
+        animation_length = len(animations)
+        if (self.frame_count >= animation_length):
+            self.frame_count = 0
+        self.image = animations[int(self.frame_count)] if self.facing == 1 else pygame.transform.flip(animations[int(self.frame_count)], True, False)
+        old_rect = self.rect
+        self.rect = self.image.get_rect(topleft=old_rect.topleft)
+
+    def image_tranformer(self, filepath, scale, bound):
+        image = pygame.image.load(filepath).convert_alpha()
+        image = pygame.transform.scale_by(image, scale)
+        width, height = image.get_size()
+        image = image.subsurface(pygame.Rect(bound, bound, width - 2*bound, height - 2*bound))
+        return image
+
+    def draw_effects(self, screen):
+        self.effect.draw_trail(screen)
 
     def _collide_axis(self, platforms, axis):
         for p in platforms:
