@@ -31,8 +31,9 @@ def main():
                 action = menu.handle_event(event)
                 if action == 'start':
                     state = 'game'
-                    level = Level()
+                    level = Level() 
                     player = Player(120, H - 200)
+                    clock.tick()
                     all_sprites = pygame.sprite.Group()
                     all_sprites.add(player)
                 elif action == 'quit':

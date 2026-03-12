@@ -1,5 +1,4 @@
 import pygame
-import collections
 from pathlib import Path
 from effects import Effects
 from enum import Enum, auto
@@ -9,7 +8,6 @@ class PlayerState(Enum):
     RUN = auto()
     JUMP = auto()
     FALL = auto()
-    HURT = auto()
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -31,7 +29,7 @@ class Player(pygame.sprite.Sprite):
             folder_name = folder_name.lower()
             if folder_name not in self.animations:
                 self.animations[folder_name] = []
-            img = self.image_tranformer(str(image_pth), 0.1, bound)
+            img = self.image_transformer(str(image_pth), 0.1, bound)
             self.animations[folder_name].append(img)
         self.frame_count = 0
 
@@ -45,8 +43,10 @@ class Player(pygame.sprite.Sprite):
         self.max_walk = 420.0
         self.friction = -12.0
         self.gravity = 2400.0
+        
+        # jump
+        self.jump_sound = pygame.mixer.Sound("assets\\Sound\\jump.mp3")
         self.jump_strength = 820.0
-
         self.on_ground = False
         self.can_double_jump = True
 
@@ -67,6 +67,11 @@ class Player(pygame.sprite.Sprite):
         self._hurt_cd_timer = 0.0
         self.hurting = False
 
+        # run
+        self.run_sound = pygame.mixer.Sound("assets\\Sound\\run.mp3")
+        self.run_sound_time = self.run_sound.get_length()
+        self._run_sound_timer = 0.0
+
     def handle_input(self, keys):
         self.acc.x = 0
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
@@ -82,10 +87,12 @@ class Player(pygame.sprite.Sprite):
             self.on_ground = False
             self.can_double_jump = True
             self.state = PlayerState.JUMP
+            self.jump_sound.play()
         elif self.can_double_jump:
             self.vel.y = -self.jump_strength * 0.9
             self.can_double_jump = False
             self.state = PlayerState.JUMP
+            self.jump_sound.play()
 
     def try_dash(self, dir_x):
         if self._dash_cd_timer <= 0 and not self.dashing:
@@ -151,9 +158,20 @@ class Player(pygame.sprite.Sprite):
         self.update_animations()
         self.frame_count += 0.5
 
+        # handle running sound
+        if self.state == PlayerState.RUN:
+            if self._run_sound_timer > 0:
+                self._run_sound_timer -= dt
+            else:
+                self.run_sound.play()
+                self._run_sound_timer = self.run_sound_time
+        else:
+            self.run_sound.stop()
+            self._run_sound_timer = 0
+
     def update_state(self):
         if self.on_ground:
-            self.state = PlayerState.IDLE if abs(self.vel.x) <= 20 else PlayerState.RUN
+            self.state = PlayerState.IDLE if abs(self.vel.x) <= 30 else PlayerState.RUN
             return
         if self.vel.y > 0:
             self.state = PlayerState.FALL
@@ -167,13 +185,14 @@ class Player(pygame.sprite.Sprite):
         else:
             animations = self.animations[self.state.name.lower()]
         animation_length = len(animations)
+
         if (self.frame_count >= animation_length):
             self.frame_count = 0
         self.image = animations[int(self.frame_count)] if self.facing == 1 else pygame.transform.flip(animations[int(self.frame_count)], True, False)
         old_rect = self.rect
         self.rect = self.image.get_rect(topleft=old_rect.topleft)
 
-    def image_tranformer(self, filepath, scale, bound):
+    def image_transformer(self, filepath, scale, bound):
         image = pygame.image.load(filepath).convert_alpha()
         image = pygame.transform.scale_by(image, scale)
         width, height = image.get_size()
