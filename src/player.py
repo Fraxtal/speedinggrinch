@@ -1,5 +1,4 @@
 import pygame
-import collections
 from pathlib import Path
 from effects import Effects
 from enum import Enum, auto
@@ -44,10 +43,6 @@ class Player(pygame.sprite.Sprite):
         self.max_walk = 420.0
         self.friction = -12.0
         self.gravity = 2400.0
-        self.jump_strength = 820.0
-
-        self.on_ground = False
-        self.can_double_jump = True
 
         # dash
         self.dash_sound = pygame.mixer.Sound("asset\\Sound\\dash.mp3")
@@ -66,6 +61,17 @@ class Player(pygame.sprite.Sprite):
         self._hurt_cd_timer = 0.0
         self.hurting = False
 
+        # run
+        self.run_sound = pygame.mixer.Sound("asset\\Sound\\run.mp3")
+        self.run_sound_time = self.run_sound.get_length()
+        self._run_sound_timer = 0.0
+
+        # jump
+        self.jump_sound = pygame.mixer.Sound("asset\\Sound\\jump.mp3")
+        self.jump_strength = 820.0
+        self.on_ground = False
+        self.can_double_jump = True
+
     def handle_input(self, keys):
         self.acc.x = 0
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:
@@ -81,10 +87,12 @@ class Player(pygame.sprite.Sprite):
             self.on_ground = False
             self.can_double_jump = True
             self.state = PlayerState.JUMP
+            self.jump_sound.play()
         elif self.can_double_jump:
             self.vel.y = -self.jump_strength * 0.9
             self.can_double_jump = False
             self.state = PlayerState.JUMP
+            self.jump_sound.play()
 
     def try_dash(self, dir_x):
         if self._dash_cd_timer <= 0 and not self.dashing:
@@ -148,15 +156,27 @@ class Player(pygame.sprite.Sprite):
         # update state and animation
         self.update_state()
         self.update_animations()
+        self.update_sound(dt)
         self.frame_count += 0.5
 
     def update_state(self):
         if self.on_ground:
-            self.state = PlayerState.IDLE if abs(self.vel.x) <= 20 else PlayerState.RUN
+            self.state = PlayerState.IDLE if abs(self.vel.x) <= 30 else PlayerState.RUN
             return
         if self.vel.y > 0:
             self.state = PlayerState.FALL
             return
+
+    def update_sound(self, dt):
+        if self.state == PlayerState.RUN:
+            if self._run_sound_timer > 0:
+                self._run_sound_timer -= dt 
+            else:
+                self.run_sound.play()
+                self._run_sound_timer = self.run_sound_time
+        else:
+            self._run_sound_timer = 0
+            self.run_sound.stop()
 
     def update_animations(self):
         if self.dashing:

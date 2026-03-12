@@ -31,10 +31,8 @@ def main():
                 if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                     # dash in facing direction
                     facing = getattr(player, 'facing', 1)
-                    player.try_dash(facing)
-
+                    player.try_dash(facing)	
         all_sprites.update(dt, level)
-
         screen.fill((200, 220, 255))
         level.draw(screen)
         player.draw_effects(screen)
