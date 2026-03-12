@@ -53,7 +53,7 @@ class Player(pygame.sprite.Sprite):
         # dash
         self.dash_sound = pygame.mixer.Sound("assets\\Sound\\dash.mp3")
         self.dash_speed = 900.0
-        self.dash_time = 0.12
+        self.dash_time = 0.3
         self.dash_cooldown = 0.7
         self._dash_timer = 0.0
         self._dash_cd_timer = 0.0
