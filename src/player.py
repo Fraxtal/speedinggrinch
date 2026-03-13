@@ -18,7 +18,14 @@ class Player(pygame.sprite.Sprite):
         h_bound = 15
         width, height = self.image.get_size()
         self.image = self.image.subsurface(pygame.Rect(w_bound, h_bound, width - 2*w_bound, height - 2*h_bound))
+        self.image = pygame.image.load("assets\\Sprite\\Idle\\0_Forest_Ranger_Idle_000.png").convert_alpha()
+        self.image = pygame.transform.scale_by(self.image, 0.1)
+        w_bound = 5
+        h_bound = 15
+        width, height = self.image.get_size()
+        self.image = self.image.subsurface(pygame.Rect(w_bound, h_bound, width - 2*w_bound, height - 2*h_bound))
         self.rect = self.image.get_rect(midbottom=(x, y))
+
 
         self.hitbox = pygame.Rect(0, 0, 30, 60)
         self.hitbox.midbottom = self.rect.midbottom
@@ -34,8 +41,21 @@ class Player(pygame.sprite.Sprite):
         self._debug_info_cooldown_timer = 0.0
 
         #trailing
+        
+        # debugging overlay
+        self.hitbox_overlay = pygame.Surface(self.hitbox.size, pygame.SRCALPHA)
+        self.hitbox_overlay.fill((255, 125, 125, 150))
+        self.debug_font = pygame.font.Font(None, 20)
+        self.debug_text = self.debug_font.render("", True, (255, 125, 125))
+        self.debug_text_rect = self.debug_text.get_rect()
+        self.debug_text_rect.midbottom = self.hitbox.midright
+        self.debug_info_cooldown = 0.5
+        self._debug_info_cooldown_timer = 0.0
+
+        #trailing
         self.trail_length = 8
         self.trail_pos = collections.deque(maxlen=self.trail_length)
+        self.vel = 0
         self.vel = 0
 
         # animation frames
@@ -46,7 +66,18 @@ class Player(pygame.sprite.Sprite):
             folder_name = image_pth.parent.name
             folder_name = folder_name.lower()
             if folder_name not in self.animations:
+        # animation frames
+        self.animations = {}
+        self.state = PlayerState.IDLE
+        base_folder = Path("assets")
+        for image_pth in base_folder.rglob("*.png"):
+            folder_name = image_pth.parent.name
+            folder_name = folder_name.lower()
+            if folder_name not in self.animations:
                 self.animations[folder_name] = []
+            img = self.image_transformer(str(image_pth), 0.1, w_bound, h_bound)
+            self.animations[folder_name].append(img)
+        self.frame_count = 0
             img = self.image_transformer(str(image_pth), 0.1, w_bound, h_bound)
             self.animations[folder_name].append(img)
         self.frame_count = 0

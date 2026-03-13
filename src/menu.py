@@ -1,6 +1,7 @@
 import pygame
 import os
 
+
 class MainMenu:
     def __init__(self, screen_width, screen_height):  # Corrected constructor name
         self.screen_width = screen_width

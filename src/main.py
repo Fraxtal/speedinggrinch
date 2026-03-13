@@ -4,11 +4,12 @@ from level import Level
 from player import Player
 from menu import MainMenu
 
+
 def main():
     pygame.init()
     W, H = 1280, 720
     screen = pygame.display.set_mode((W, H))
-    pygame.display.set_caption('Speeding Grinch')
+    pygame.display.set_caption('speedinggrinch')
     clock = pygame.time.Clock()
 
     menu = MainMenu(W, H)
