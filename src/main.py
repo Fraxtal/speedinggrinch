@@ -91,6 +91,8 @@ def main():
 
             scroll_y = int(level.scroll_y) if current_level_number == 2 else 0
             player.draw_trail(screen, level.scroll, scroll_y)
+            player.draw_stamina_bar(screen, level.scroll, scroll_y)
+            # player.draw_debug(dt, screen, level.scroll, scroll_y)
 
             player_screen_rect = player.rect.copy()
             player_screen_rect.x -= int(level.scroll)
