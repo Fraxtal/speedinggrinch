@@ -76,6 +76,12 @@ class Player(pygame.sprite.Sprite):
         self._dash_cd_timer = 0.0
         self.dashing = False
 
+        # stamina bar
+        self.stamina_bar = pygame.Surface((self.hitbox.width, 5), pygame.SRCALPHA)
+        self.stamina_bar.fill((125, 255, 125, 255))
+        self.stamina_rect = self.stamina_bar.get_rect()
+        self.stamina_rect.bottomleft = self.hitbox.topleft
+
         # hurt
         self.hurt_sound = pygame.mixer.Sound("assets\\Sound\\hurt.mp3")
         self.hurt_time = 0.5
@@ -247,10 +253,25 @@ class Player(pygame.sprite.Sprite):
 
             trail_rect = trail_img.get_rect(center=(pos[0] - camera_scroll, pos[1] - camera_scroll_y))
             screen.blit(trail_img, trail_rect)
+            
+    def draw_stamina_bar(self, screen, camera_scroll, camera_scroll_y=0):
+        self.stamina_rect.bottomleft = (self.hitbox.x - camera_scroll, self.hitbox.y - camera_scroll_y)
+
+        if (self._dash_cd_timer > 0):
+            ratio = (self.dash_cooldown - self._dash_cd_timer) / self.dash_cooldown
+            cd_progress = int(ratio * 255)
+            color = ((255 - cd_progress), cd_progress, 0, 255)
+            cur_rect = pygame.Rect(self.stamina_rect.x, 
+                                   self.stamina_rect.y, 
+                                   self.stamina_rect.width * ratio, 
+                                   self.stamina_rect.height)
+            pygame.draw.rect(screen, color, cur_rect)
+        else:
+            pygame.draw.rect(screen, (0, 255, 0, 255), self.stamina_rect)
+            pass
 
     # draw debug info
-
-    def draw_debug(self, dt, screen):
+    def draw_debug(self, dt, screen, camera_scroll, camera_scroll_y=0):
         if self._debug_info_cooldown_timer <= 0:
             self._debug_info_cooldown_timer = self.debug_info_cooldown
             self.debug_text = self.debug_font.render(f"x-Vel: {round(self.vel.x, 2)}  y-Vel: {round(self.vel.y, 2)}", True, (255, 125, 125))
@@ -258,8 +279,8 @@ class Player(pygame.sprite.Sprite):
             self._debug_info_cooldown_timer -= dt
 
         self.debug_text_rect.midbottom = self.hitbox.midright
-        screen.blit(self.hitbox_overlay, self.hitbox)
-        screen.blit(self.debug_text, self.debug_text_rect)
+        screen.blit(self.hitbox_overlay, (self.hitbox.x - camera_scroll, self.hitbox.y - camera_scroll_y))
+        screen.blit(self.debug_text, (self.debug_text_rect.x - camera_scroll, self.debug_text_rect.y - camera_scroll_y))
 
     def _collide_axis(self, platforms, axis):
         for p in platforms:
