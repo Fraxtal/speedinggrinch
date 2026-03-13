@@ -57,8 +57,8 @@ class Player(pygame.sprite.Sprite):
         self.acc = pygame.math.Vector2(0, 0)
 
         self.facing = 1
-        self.speed = 1600.0  # acceleration
-        self.max_walk = 420.0
+        self.speed = 1200.0  # acceleration
+        self.max_walk = 340.0
         self.friction = -12.0
         self.gravity = 2400.0
 
@@ -70,7 +70,7 @@ class Player(pygame.sprite.Sprite):
 
         # dash
         self.dash_sound = pygame.mixer.Sound("assets\\Sound\\dash.mp3")
-        self.dash_speed = 900.0
+        self.dash_speed = 700.0
         self.dash_time = 0.3
         self.dash_cooldown = 0.7
         self._dash_timer = 0.0
@@ -220,7 +220,7 @@ class Player(pygame.sprite.Sprite):
         return image
 
     # drawing trailing effects
-    def draw_trail(self, screen):
+    def draw_trail(self, screen, camera_scroll):
         self.trail_pos.append(self.rect.center)
         self.trail_length = 12 if self.dashing else 8
         if len(self.trail_pos) != self.trail_length:
@@ -235,7 +235,7 @@ class Player(pygame.sprite.Sprite):
             trail_img.blit(color_mask, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
             trail_img.set_alpha(ratio/2)
 
-            trail_rect = trail_img.get_rect(center=pos)
+            trail_rect = trail_img.get_rect(center=(pos[0] - camera_scroll, pos[1]))
             screen.blit(trail_img, trail_rect)
 
     # draw debug info

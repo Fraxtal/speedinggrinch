@@ -50,11 +50,14 @@ def main():
             menu.update(pygame.mouse.get_pos())
             menu.draw(screen)
         elif state == 'game':
+            level.update(player)
             all_sprites.update(dt, level)  # Adjust as needed
             screen.fill((200, 220, 255))
             level.draw(screen)
-            player.draw_trail(screen)
-            all_sprites.draw(screen)
+            player.draw_trail(screen, level.scroll)
+            player_screen_rect = player.rect.copy()
+            player_screen_rect.x -= level.scroll
+            screen.blit(player.image, player_screen_rect)
             # player.draw_debug(dt, screen)
 
         pygame.display.flip()
