@@ -163,6 +163,13 @@ class Level:
             if self.goal_rect:
                 self.goal_timer += dt if dt > 0 else 1 / 60
 
+    def draw_bg_at(self, surf, scroll):
+        """Draw level 1 background + platforms at an arbitrary scroll (used by menu)."""
+        saved = self.scroll
+        self.scroll = scroll
+        self._draw_level1(surf)
+        self.scroll = saved
+
     def draw(self, surf):
         if self.level_number == 1:
             self._draw_level1(surf)

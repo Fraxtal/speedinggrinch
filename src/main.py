@@ -68,7 +68,7 @@ def main():
                     overlay_timer = 0.0
 
         if state == 'menu':
-            menu.update(pygame.mouse.get_pos())
+            menu.update(pygame.mouse.get_pos(), dt)
             menu.draw(screen)
 
         elif state == 'game':

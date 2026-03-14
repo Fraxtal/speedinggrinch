@@ -1,12 +1,59 @@
 import pygame
 import os
+from level import Level
+
+
+class MenuBackground:
+    SCROLL_SPEED = 180   # px per second
+    FADE_DURATION = 1.2  # seconds to fade out / fade in
+
+    def __init__(self, screen_width, screen_height):
+        self.W = screen_width
+        self.H = screen_height
+        self.level = Level(1)
+        self.max_scroll = self.level.world_width - screen_width
+        self.scroll = 0.0
+        self._fade_alpha = 0        # 0 = transparent overlay, 255 = black
+        self._fading_out = False
+        self._fading_in = False
+        self._fade_surf = pygame.Surface((screen_width, screen_height))
+        self._fade_surf.fill((0, 0, 0))
+
+    def update(self, dt):
+        fade_step = int(255 / self.FADE_DURATION * dt)
+
+        if self._fading_out:
+            self._fade_alpha = min(255, self._fade_alpha + fade_step)
+            if self._fade_alpha >= 255:
+                self.scroll = 0.0
+                self._fading_out = False
+                self._fading_in = True
+            return
+
+        if self._fading_in:
+            self._fade_alpha = max(0, self._fade_alpha - fade_step)
+            if self._fade_alpha <= 0:
+                self._fading_in = False
+            return
+
+        self.scroll += self.SCROLL_SPEED * dt
+        if self.scroll >= self.max_scroll:
+            self.scroll = self.max_scroll
+            self._fading_out = True
+
+    def draw(self, surf):
+        self.level.draw_bg_at(surf, self.scroll)
+        if self._fade_alpha > 0:
+            self._fade_surf.set_alpha(self._fade_alpha)
+            surf.blit(self._fade_surf, (0, 0))
 
 
 class MainMenu:
-    def __init__(self, screen_width, screen_height):  # Corrected constructor name
+    def __init__(self, screen_width, screen_height):
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.submenu = "main"  # Initial menu state
+        self.submenu = "main"
+        self.bg = MenuBackground(screen_width, screen_height)
 
         # Load assets
         asset_path = 'main_menu'
@@ -46,32 +93,55 @@ class MainMenu:
         self.lvl1_hovered = False
         self.lvl2_hovered = False
         self.back_hovered = False
+        self._prev_hovered = set()
 
-    def update(self, mouse_pos):
+        # SFX
+        self.pop_sfx = pygame.mixer.Sound(os.path.join(asset_path, 'sfx', 'popsfx.mp3'))
+
+    def update(self, mouse_pos, dt=0):
+        self.bg.update(dt)
         self.start_hovered = self.start_rect.collidepoint(mouse_pos)
         self.quit_hovered = self.quit_rect.collidepoint(mouse_pos)
         self.lvl1_hovered = self.lvl1_rect.collidepoint(mouse_pos)
         self.lvl2_hovered = self.lvl2_rect.collidepoint(mouse_pos)
         self.back_hovered = self.back_rect.collidepoint(mouse_pos)
 
+        now_hovered = {k for k, v in {
+            'start': self.start_hovered, 'quit': self.quit_hovered,
+            'lvl1': self.lvl1_hovered, 'lvl2': self.lvl2_hovered,
+            'back': self.back_hovered,
+        }.items() if v}
+        if now_hovered - self._prev_hovered:
+            self.pop_sfx.play()
+        self._prev_hovered = now_hovered
+
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.submenu == "main":
                 if self.start_rect.collidepoint(event.pos):
-                    self.submenu = "levels"  # Change to level selection
+                    self.pop_sfx.play()
+                    self.submenu = "levels"
                 elif self.quit_rect.collidepoint(event.pos):
+                    self.pop_sfx.play()
                     return 'quit'
             elif self.submenu == "levels":
                 if self.lvl1_rect.collidepoint(event.pos):
+                    self.pop_sfx.play()
                     return 'level_1'
                 elif self.lvl2_rect.collidepoint(event.pos):
+                    self.pop_sfx.play()
                     return 'level_2'
                 elif self.back_rect.collidepoint(event.pos):
-                    self.submenu = "main"  # Go back to title
+                    self.pop_sfx.play()
+                    self.submenu = "main"
         return None
 
     def draw(self, screen):
-        screen.fill((50, 50, 80))
+        self.bg.draw(screen)
+        # dark tint so UI stays readable over the scrolling background
+        tint = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+        tint.fill((0, 0, 0, 120))
+        screen.blit(tint, (0, 0))
         screen.blit(self.title, self.title_rect)
 
         if self.submenu == "main":
