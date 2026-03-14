@@ -2,7 +2,6 @@ import pygame
 import math
 from pathlib import Path
 
-
 def _load_animations(scale=0.1, w_bound=5, h_bound=15):
     animations = {}
     base_folder = Path("assets") / "Sprite"
@@ -22,16 +21,12 @@ def _load_animations(scale=0.1, w_bound=5, h_bound=15):
         animations[folder_name].append(img)
     return animations
 
-
 _SHARED_ANIMATIONS = None
-
-
 def get_animations():
     global _SHARED_ANIMATIONS
     if _SHARED_ANIMATIONS is None:
         _SHARED_ANIMATIONS = _load_animations()
     return _SHARED_ANIMATIONS
-
 
 class Enemy:
     WIDTH, HEIGHT = 28, 48
@@ -45,7 +40,6 @@ class Enemy:
         self.frame = 0.0
         self.facing = 1
         self.vel_x = self.SPEED
-
         first = self.animations["idle"][0]
         self.rect = first.get_rect()
         self.rect.midbottom = (x + self.WIDTH // 2, platform.y)
@@ -79,7 +73,6 @@ class Enemy:
             frame_img = pygame.transform.flip(frame_img, True, False)
         draw_rect = frame_img.get_rect(midbottom=(self.rect.centerx - int(scroll), self.rect.bottom))
         surf.blit(frame_img, draw_rect)
-
         # detection cone
         ex = self.rect.centerx - int(scroll) + self.facing * self.WIDTH // 2
         ey = self.rect.centery

@@ -2,7 +2,6 @@ import pygame
 import os
 from level import Level
 
-
 STORY_LINES = [
     "Santa's factory is not the cheerful place",
     "the world believes it to be.",
@@ -27,11 +26,25 @@ STORY_LINES = [
     "Escape the factory.",
 ]
 
+STORY_LINES_2 = [
+    "You escaped the factory.",
+    "",
+    "But the cold outside is no refuge.",
+    "Santa has sent his patrol elves",
+    "into the snow to find you.",
+    "",
+    "The forest is dark. The wind is sharp.",
+    "Every shadow could be a watcher.",
+    "",
+    "Keep moving. Reach the treeline.",
+    "Do not stop. Do not get caught.",
+    "",
+    "Survive the cold.",
+]
 
 class StoryScroll:
     FADE_SPEED = 280   # alpha units per second
-
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, lines=None):
         self.W = screen_width
         self.H = screen_height
         self.alpha = 0
@@ -39,29 +52,22 @@ class StoryScroll:
         self.fading_out = False
         self.done = False
         self._dismissed = False
-
         self.title_font = pygame.font.Font(None, 42)
         self.body_font  = pygame.font.Font(None, 30)
         self.hint_font  = pygame.font.Font(None, 24)
-
         # pre-render lines
+        _lines = lines if lines is not None else STORY_LINES
         self._title_surf = self.title_font.render("— BACKSTORY —", True, (255, 220, 120))
         self._line_surfs = [
-            self.body_font.render(l, True, (220, 210, 190)) for l in STORY_LINES
+            self.body_font.render(l, True, (220, 210, 190)) for l in _lines
         ]
-        self._hint_surf = self.hint_font.render(
-            "Press any key or click to continue", True, (160, 150, 130)
-        )
-
+        self._hint_surf = self.hint_font.render("Press any key or click to continue", True, (160, 150, 130))
         self._sfx = pygame.mixer.Sound(os.path.join("main_menu", "sfx", "pageflipsfx.mp3"))
         self._sfx.play()
-
         # scroll panel dimensions
         self._pad = 48
         line_h = self.body_font.get_linesize()
-        content_h = (self.title_font.get_linesize() + 16
-                     + len(STORY_LINES) * line_h
-                     + 24 + self.hint_font.get_linesize())
+        content_h = (self.title_font.get_linesize() + 16 + len(_lines) * line_h + 24 + self.hint_font.get_linesize())
         panel_w = int(screen_width * 0.62)
         panel_h = min(content_h + self._pad * 2, screen_height - 80)
         self._panel_rect = pygame.Rect(0, 0, panel_w, panel_h)
@@ -91,33 +97,27 @@ class StoryScroll:
     def draw(self, screen):
         a = int(self.alpha)
         pw, ph = self._panel_rect.size
-
         self._surf.fill((0, 0, 0, 0))
         # parchment background
         pygame.draw.rect(self._surf, (30, 20, 10, 210), (0, 0, pw, ph), border_radius=12)
         pygame.draw.rect(self._surf, (180, 140, 80, 180), (0, 0, pw, ph), 2, border_radius=12)
-
         # title
         tx = (pw - self._title_surf.get_width()) // 2
         self._surf.blit(self._title_surf, (tx, self._pad))
-
         line_h = self.body_font.get_linesize()
         y = self._pad + self.title_font.get_linesize() + 16
         for surf in self._line_surfs:
             lx = (pw - surf.get_width()) // 2
             self._surf.blit(surf, (lx, y))
             y += line_h
-
         hx = (pw - self._hint_surf.get_width()) // 2
         self._surf.blit(self._hint_surf, (hx, ph - self._pad))
-
         self._surf.set_alpha(a)
         screen.blit(self._surf, self._panel_rect)
 
 class MenuBackground:
     SCROLL_SPEED = 180   # px per second
     FADE_DURATION = 1.2  # seconds to fade out / fade in
-
     def __init__(self, screen_width, screen_height):
         self.W = screen_width
         self.H = screen_height
@@ -132,7 +132,6 @@ class MenuBackground:
 
     def update(self, dt):
         fade_step = int(255 / self.FADE_DURATION * dt)
-
         if self._fading_out:
             self._fade_alpha = min(255, self._fade_alpha + fade_step)
             if self._fade_alpha >= 255:
@@ -140,13 +139,11 @@ class MenuBackground:
                 self._fading_out = False
                 self._fading_in = True
             return
-
         if self._fading_in:
             self._fade_alpha = max(0, self._fade_alpha - fade_step)
             if self._fade_alpha <= 0:
                 self._fading_in = False
             return
-
         self.scroll += self.SCROLL_SPEED * dt
         if self.scroll >= self.max_scroll:
             self.scroll = self.max_scroll
@@ -158,22 +155,17 @@ class MenuBackground:
             self._fade_surf.set_alpha(self._fade_alpha)
             surf.blit(self._fade_surf, (0, 0))
 
-
 class MainMenu:
     def __init__(self, screen_width, screen_height):
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.submenu = "main"
         self.bg = MenuBackground(screen_width, screen_height)
-
-        # Load assets
         asset_path = 'main_menu'
         try:
             self.title = pygame.image.load(os.path.join(asset_path, 'menu_title.png')).convert_alpha()
             self.start_btn = pygame.image.load(os.path.join(asset_path, 'button_start.png')).convert_alpha()
             self.quit_btn = pygame.image.load(os.path.join(asset_path, 'button_quit.png')).convert_alpha()
-
-            # Scale buttons
             self.start_btn = pygame.transform.scale(self.start_btn, (int(self.screen_width * 0.25), int(self.screen_height * 0.125)))
             self.quit_btn = pygame.transform.scale(self.quit_btn, (int(self.screen_width * 0.25), int(self.screen_height * 0.125)))
         except:
@@ -182,22 +174,18 @@ class MainMenu:
             self.start_btn.fill((100, 100, 100))
             self.quit_btn = pygame.Surface((200, 50))
             self.quit_btn.fill((100, 100, 100))
-
         # Position elements
         self.title_rect = self.title.get_rect(center=(screen_width // 2, screen_height // 3))
         self.start_rect = self.start_btn.get_rect(center=(screen_width // 2, screen_height // 2 + 50))
         self.quit_rect = self.quit_btn.get_rect(center=(screen_width // 2, screen_height // 2 + 170))
-
         # Level Selection Rects
         self.font = pygame.font.Font(None, 50)
         self.lvl1_rect = pygame.Rect(0, 0, 250, 60)
         self.lvl2_rect = pygame.Rect(0, 0, 250, 60)
         self.back_rect = pygame.Rect(0, 0, 250, 60)
-
         self.lvl1_rect.center = (screen_width // 2, screen_height // 2 - 20)
         self.lvl2_rect.center = (screen_width // 2, screen_height // 2 + 60)
         self.back_rect.center = (screen_width // 2, screen_height // 2 + 180)
-
         # Hover states
         self.start_hovered = False
         self.quit_hovered = False
@@ -205,7 +193,6 @@ class MainMenu:
         self.lvl2_hovered = False
         self.back_hovered = False
         self._prev_hovered = set()
-
         # SFX
         self.pop_sfx = pygame.mixer.Sound(os.path.join(asset_path, 'sfx', 'popsfx.mp3'))
         self._sfx_channel = pygame.mixer.find_channel()
@@ -221,7 +208,6 @@ class MainMenu:
         self.lvl1_hovered = self.lvl1_rect.collidepoint(mouse_pos)
         self.lvl2_hovered = self.lvl2_rect.collidepoint(mouse_pos)
         self.back_hovered = self.back_rect.collidepoint(mouse_pos)
-
         now_hovered = {k for k, v in {
             'start': self.start_hovered, 'quit': self.quit_hovered,
             'lvl1': self.lvl1_hovered, 'lvl2': self.lvl2_hovered,
@@ -259,7 +245,6 @@ class MainMenu:
         tint.fill((0, 0, 0, 120))
         screen.blit(tint, (0, 0))
         screen.blit(self.title, self.title_rect)
-
         if self.submenu == "main":
             self._draw_image_btn(screen, self.start_btn, self.start_rect, self.start_hovered)
             self._draw_image_btn(screen, self.quit_btn, self.quit_rect, self.quit_hovered)

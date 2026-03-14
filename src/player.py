@@ -19,10 +19,8 @@ class Player(pygame.sprite.Sprite):
         width, height = self.image.get_size()
         self.image = self.image.subsurface(pygame.Rect(w_bound, h_bound, width - 2*w_bound, height - 2*h_bound))
         self.rect = self.image.get_rect(midbottom=(x, y))
-
         self.hitbox = pygame.Rect(0, 0, 30, 60)
         self.hitbox.midbottom = self.rect.midbottom
-        
         # debugging overlay
         self.hitbox_overlay = pygame.Surface(self.hitbox.size, pygame.SRCALPHA)
         self.hitbox_overlay.fill((255, 125, 125, 150))
@@ -32,11 +30,9 @@ class Player(pygame.sprite.Sprite):
         self.debug_text_rect.midbottom = self.hitbox.midright
         self.debug_info_cooldown = 0.5
         self._debug_info_cooldown_timer = 0.0
-
         #trailing
         self.trail_length = 8
         self.trail_pos = collections.deque(maxlen=self.trail_length)
-
         # animation frames
         self.animations = {}
         self.state = PlayerState.IDLE
@@ -49,24 +45,20 @@ class Player(pygame.sprite.Sprite):
             img = self.image_transformer(str(image_pth), 0.1, w_bound, h_bound)
             self.animations[folder_name].append(img)
         self.frame_count = 0
-
         #positions
         self.pos = pygame.math.Vector2(self.hitbox.centerx, self.hitbox.bottom)
         self.vel = pygame.math.Vector2(0, 0)
         self.acc = pygame.math.Vector2(0, 0)
-
         self.facing = 1
         self.speed = 1200.0  # acceleration
         self.max_walk = 340.0
         self.friction = -12.0
         self.gravity = 2400.0
-
         # jump
         self.jump_sound = pygame.mixer.Sound("assets\\Sound\\jump.mp3")
         self.jump_strength = 820.0
         self.on_ground = False
         self.can_double_jump = True
-
         # dash
         self.dash_sound = pygame.mixer.Sound("assets\\Sound\\dash.mp3")
         self.dash_speed = 700.0
@@ -75,13 +67,11 @@ class Player(pygame.sprite.Sprite):
         self._dash_timer = 0.0
         self._dash_cd_timer = 0.0
         self.dashing = False
-
         # stamina bar
         self.stamina_bar = pygame.Surface((self.hitbox.width, 5), pygame.SRCALPHA)
         self.stamina_bar.fill((125, 255, 125, 255))
         self.stamina_rect = self.stamina_bar.get_rect()
         self.stamina_rect.bottomleft = self.hitbox.topleft
-
         # hurt
         self.hurt_sound = pygame.mixer.Sound("assets\\Sound\\hurt.mp3")
         self.hurt_time = 0.5
@@ -89,7 +79,6 @@ class Player(pygame.sprite.Sprite):
         self._hurt_timer = 0.0
         self._hurt_cd_timer = 0.0
         self.hurting = False
-
         # run
         self.run_sound = pygame.mixer.Sound("assets\\Sound\\run.mp3")
         self.run_sound_time = self.run_sound.get_length()
@@ -136,11 +125,9 @@ class Player(pygame.sprite.Sprite):
     def update(self, dt, level):
         keys = pygame.key.get_pressed()
         self.handle_input(keys)
-
         # apply horizontal acceleration and friction
         self.acc.y = self.gravity
         self.acc.x += self.vel.x * self.friction * 0.001
-
         # integrate
         if self.dashing:
             self._dash_timer -= dt
@@ -151,47 +138,38 @@ class Player(pygame.sprite.Sprite):
             # clamp
             if abs(self.vel.x) > self.max_walk:
                 self.vel.x = self.max_walk * (1 if self.vel.x > 0 else -1)
-
         if self.hurting:
             self._hurt_timer -= dt
             if self._hurt_timer <= 0:
                 self.hurting = False
             else:
                 self.vel.x = self.facing * 2
-
         self.vel.y += self.acc.y * dt
-
         # simple Euler position update
         self.pos.x += self.vel.x * dt
         self.hitbox.centerx = int(self.pos.x)
         self._collide_axis(level.platforms, 'x')
-
         # clamp to world bounds
         if self.hitbox.left < 0:
             self.hitbox.left = 0
             self.pos.x = self.hitbox.centerx
             self.vel.x = 0
-            
+    
         if self.hitbox.right > level.world_width:
             self.hitbox.right = level.world_width
             self.pos.x = self.hitbox.centerx
             self.vel.x = 0
-
         self.pos.y += self.vel.y * dt
         self.hitbox.bottom = int(self.pos.y)
         self._collide_axis(level.platforms, 'y')
-
         if self._dash_cd_timer > 0:
             self._dash_cd_timer -= dt
-
         # constant deceleration
         self.vel.x += (0 - self.vel.x)/20
-
         # update state and animation
         self.update_state()
         self.update_animations()
         self.frame_count += 0.5
-
         # handle running sound
         if self.state == PlayerState.RUN:
             if self._run_sound_timer > 0:
@@ -221,7 +199,6 @@ class Player(pygame.sprite.Sprite):
         else:
             animations = self.animations[self.state.name.lower()]
         animation_length = len(animations)
-
         if (self.frame_count >= animation_length):
             self.frame_count = 0
         self.image = animations[int(self.frame_count)] if self.facing == 1 else pygame.transform.flip(animations[int(self.frame_count)], True, False)
@@ -244,27 +221,20 @@ class Player(pygame.sprite.Sprite):
         for i, pos in enumerate(self.trail_pos):
             ratio = int(125 * ((self.trail_length - i) / self.trail_length))
             trail_img = self.image.copy()
-
             color_mask = pygame.mask.from_surface(trail_img)
             color_mask = color_mask.to_surface(setcolor=(ratio, ratio, 255, 255), unsetcolor=(0, 0, 0, 0))
-
             trail_img.blit(color_mask, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
             trail_img.set_alpha(ratio/2)
-
             trail_rect = trail_img.get_rect(center=(pos[0] - camera_scroll, pos[1] - camera_scroll_y))
             screen.blit(trail_img, trail_rect)
             
     def draw_stamina_bar(self, screen, camera_scroll, camera_scroll_y=0):
         self.stamina_rect.bottomleft = (self.hitbox.x - camera_scroll, self.hitbox.y - camera_scroll_y)
-
         if (self._dash_cd_timer > 0):
             ratio = (self.dash_cooldown - self._dash_cd_timer) / self.dash_cooldown
             cd_progress = int(ratio * 255)
             color = ((255 - cd_progress), cd_progress, 0, 255)
-            cur_rect = pygame.Rect(self.stamina_rect.x, 
-                                   self.stamina_rect.y, 
-                                   self.stamina_rect.width * ratio, 
-                                   self.stamina_rect.height)
+            cur_rect = pygame.Rect(self.stamina_rect.x, self.stamina_rect.y, self.stamina_rect.width * ratio, self.stamina_rect.height)
             pygame.draw.rect(screen, color, cur_rect)
         else:
             pygame.draw.rect(screen, (0, 255, 0, 255), self.stamina_rect)
@@ -277,7 +247,6 @@ class Player(pygame.sprite.Sprite):
             self.debug_text = self.debug_font.render(f"x-Vel: {round(self.vel.x, 2)}  y-Vel: {round(self.vel.y, 2)}", True, (255, 125, 125))
         else:
             self._debug_info_cooldown_timer -= dt
-
         self.debug_text_rect.midbottom = self.hitbox.midright
         screen.blit(self.hitbox_overlay, (self.hitbox.x - camera_scroll, self.hitbox.y - camera_scroll_y))
         screen.blit(self.debug_text, (self.debug_text_rect.x - camera_scroll, self.debug_text_rect.y - camera_scroll_y))
