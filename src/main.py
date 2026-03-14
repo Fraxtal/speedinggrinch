@@ -23,6 +23,7 @@ def main():
     OVERLAY_HOLD = 2.5
     prev_touching_machine = False
     enemies = []
+    levels_complete = set()
     overlay_font_big = pygame.font.Font(None, 100)
     overlay_font_small = pygame.font.Font(None, 44)
     running = True
@@ -46,6 +47,7 @@ def main():
                     pending_level = 2
                     state = 'story'
                     prev_touching_machine = False
+                    prev_touching_machine = False
                 elif action == 'quit':
                     running = False
             elif state == 'story':
@@ -61,6 +63,7 @@ def main():
                 if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
                     state = 'menu'
                     overlay_timer = 0.0
+                    menu = MainMenu(W, H, both_complete=(levels_complete == {1, 2}))
                     pygame.mixer.music.load(os.path.join("assets", "Sound", "menu_music.mp3"))
                     pygame.mixer.music.play(-1)
         if state == 'menu':
@@ -96,10 +99,11 @@ def main():
 
             touching_machine = level.check_machine_collision(player.hitbox)
             if touching_machine and not prev_touching_machine and not player.dashing:
-                player.vel.x *= 0.2
+                player.vel.x *= 0.5
                 player.try_hurt(player.facing)
             prev_touching_machine = touching_machine
             if level.check_goal_collision(player.hitbox):
+                levels_complete.add(current_level_number)
                 state = 'win'
                 overlay_timer = 0.0
 
@@ -127,6 +131,7 @@ def main():
             if overlay_timer >= OVERLAY_HOLD:
                 state = 'menu'
                 overlay_timer = 0.0
+                menu = MainMenu(W, H, both_complete=(levels_complete == {1, 2}))
                 pygame.mixer.music.load(os.path.join("assets", "Sound", "menu_music.mp3"))
                 pygame.mixer.music.set_volume(0.5)
                 pygame.mixer.music.play(-1)

@@ -156,9 +156,10 @@ class MenuBackground:
             surf.blit(self._fade_surf, (0, 0))
 
 class MainMenu:
-    def __init__(self, screen_width, screen_height):
+    def __init__(self, screen_width, screen_height, both_complete=False):
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.both_complete = both_complete
         self.submenu = "main"
         self.bg = MenuBackground(screen_width, screen_height)
         asset_path = 'main_menu'
@@ -222,7 +223,10 @@ class MainMenu:
             if self.submenu == "main":
                 if self.start_rect.collidepoint(event.pos):
                     self._play_pop()
-                    self.submenu = "levels"
+                    if self.both_complete:
+                        self.submenu = "levels"
+                    else:
+                        return 'level_1'
                 elif self.quit_rect.collidepoint(event.pos):
                     self._play_pop()
                     return 'quit'

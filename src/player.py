@@ -21,6 +21,8 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(midbottom=(x, y))
         self.hitbox = pygame.Rect(0, 0, 30, 60)
         self.hitbox.midbottom = self.rect.midbottom
+        self._normal_hitbox_width = 30
+        self._dash_hitbox_width = 16
         # debugging overlay
         self.hitbox_overlay = pygame.Surface(self.hitbox.size, pygame.SRCALPHA)
         self.hitbox_overlay.fill((255, 125, 125, 150))
@@ -133,8 +135,10 @@ class Player(pygame.sprite.Sprite):
         # integrate
         if self.dashing:
             self._dash_timer -= dt
+            self.hitbox.width = self._dash_hitbox_width
             if self._dash_timer <= 0:
                 self.dashing = False
+                self.hitbox.width = self._normal_hitbox_width
         else:
             self.vel.x += self.acc.x * dt
             # clamp
@@ -144,7 +148,7 @@ class Player(pygame.sprite.Sprite):
             self._hurt_timer -= dt
             if self._hurt_timer <= 0:
                 self.hurting = False
-            else:
+            elif not self.dashing:
                 self.vel.x = self.facing * 2
         self.vel.y += self.acc.y * dt
         # simple Euler position update

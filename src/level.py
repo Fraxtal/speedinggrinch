@@ -150,40 +150,30 @@ class Level:
         ground_y = H - T * 3
         self.platforms = [pygame.Rect(0, ground_y, self.world_width, T * 3)]
         wall_defs = [
-            (550, 4),
-            (1200, 6),
-            (2000, 5),
-            (2800, 7),
-            (3600, 5),
-            (4500, 6),
-            (5300, 4),
-            (6100, 7),
-            (6900, 5),
-            (7500, 6)
+            (800, 5),
+            (1700, 4),
+            (2600, 7),
+            (3700, 5),
+            (4800, 6),
+            (6000, 4),
+            (7200, 6),
         ]
         for wx, wh in wall_defs:
             self.platforms.append(pygame.Rect(wx, ground_y - wh * T, T * 2, wh * T))
         plat_defs = [
-            (300,  H - T * 7, 4),
-            (620,  H - T *  11, 4),
-            (900,  H - T * 7, 4),
-            (1250, H - T * 13, 4),
-            (1580, H - T * 8, 4),
-            (2050, H - T * 12, 4),
-            (2380, H - T * 7, 5),
-            (2850, H - T * 14, 4),
-            (3200, H - T * 9, 4),
-            (3650, H - T * 12, 4),
-            (4050, H - T * 7, 4),
-            (4550, H - T * 13, 4),
-            (4900, H - T * 8, 4),
-            (5350, H - T * 11, 4),
-            (5700, H - T * 7, 5),
-            (6150, H - T * 14, 4),
-            (6500, H - T * 9, 4),
-            (6950, H - T * 12, 4),
-            (7300, H - T * 7, 4),
-            (7550, H - T * 13, 5)
+            (450,  H - T * 10, 5),
+            (1100, H - T * 7,  4),
+            (1750, H - T * 13, 5),
+            (2300, H - T * 8,  4),
+            (2650, H - T * 11, 5),
+            (3200, H - T * 6,  4),
+            (3750, H - T * 14, 4),
+            (4300, H - T * 9,  5),
+            (4850, H - T * 7,  4),
+            (5400, H - T * 12, 5),
+            (6050, H - T * 8,  4),
+            (6600, H - T * 11, 5),
+            (7250, H - T * 9,  4),
         ]
         for x, y, tw in plat_defs:
             self.platforms.append(pygame.Rect(x, y, tw * T, T * 2))
@@ -199,29 +189,29 @@ class Level:
                 sx = plat.x + rng.randint(8, max_offset)
                 for k in range(count):
                     self.spike_rects.append(pygame.Rect(sx + k * S, plat.y - S, S, S))
-        grng = random.Random(55)
+        grng = random.Random(88)
         MW, MH = 36, 48
-        for plat in self.platforms[floating_start + 2:]:
+        for plat in self.platforms[floating_start:]:
             if plat.width < MW * 2:
                 continue
-            if grng.random() < 0.30:
+            if grng.random() < 0.45:
                 mx = grng.randint(plat.x + 8, plat.x + plat.width - MW - 8)
                 self.machine_rects.append(pygame.Rect(mx, plat.y - MH, MW, MH))
-        erng = random.Random(33)
+        erng = random.Random(61)
         wall_xs = [wx for wx, _ in wall_defs]
         segments = list(zip([0] + wall_xs, wall_xs + [self.world_width - 200]))
         for seg_start, seg_end in segments[1:]:
             seg_w = seg_end - seg_start - T * 2
             if seg_w < 80:
                 continue
-            if erng.random() < 0.55:
+            if erng.random() < 0.70:
                 patrol = pygame.Rect(seg_start + T * 2, ground_y, seg_w, T * 3)
                 ex = erng.randint(patrol.x, patrol.right - 28)
                 self.enemies.append((ex, patrol))
-        for plat in self.platforms[floating_start + 3:]:
+        for plat in self.platforms[floating_start + 2:]:
             if plat.width < 120:
                 continue
-            if erng.random() < 0.30:
+            if erng.random() < 0.40:
                 ex = erng.randint(plat.x + 10, plat.x + plat.width - 38)
                 self.enemies.append((ex, plat))
         self.goal_rect = pygame.Rect(self.world_width - 160, ground_y - T * 5, 80, T * 5)
