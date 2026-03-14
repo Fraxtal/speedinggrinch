@@ -104,19 +104,19 @@ def main():
                     break
 
             if level.check_spike_collision(player.hitbox):
-                player.hurt(player.facing)
+                player.try_hurt(player.facing)
 
             touching_machine = level.check_machine_collision(player.hitbox)
             if touching_machine and not prev_touching_machine and not player.dashing:
                 player.vel.x *= 0.2
-                player.hurt(player.facing)
+                player.try_hurt(player.facing)
             prev_touching_machine = touching_machine
 
             if level.check_goal_collision(player.hitbox):
                 state = 'win'
                 overlay_timer = 0.0
 
-            if player.hitbox.top > level.world_height + 200:
+            if player.hitbox.top > level.world_height + 200 or player.hp <= 0:
                 state = 'dead'
                 overlay_timer = 0.0
 
@@ -125,8 +125,7 @@ def main():
 
             scroll_y = int(level.scroll_y) if current_level_number == 2 else 0
             player.draw_trail(screen, level.scroll, scroll_y)
-            player.draw_stamina_bar(screen, level.scroll, scroll_y)
-            # player.draw_debug(dt, screen, level.scroll, scroll_y)
+            player.draw_status_bar(screen)
 
             for enemy in enemies:
                 enemy.draw(screen, level.scroll)
@@ -135,6 +134,7 @@ def main():
             player_screen_rect.x -= int(level.scroll)
             player_screen_rect.y -= scroll_y
             screen.blit(player.image, player_screen_rect)
+            # player.draw_debug(dt, screen, level.scroll, scroll_y)
 
         elif state == 'win':
             overlay_timer += dt
