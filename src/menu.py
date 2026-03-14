@@ -97,6 +97,11 @@ class MainMenu:
 
         # SFX
         self.pop_sfx = pygame.mixer.Sound(os.path.join(asset_path, 'sfx', 'popsfx.mp3'))
+        self._sfx_channel = pygame.mixer.find_channel()
+
+    def _play_pop(self):
+        if self._sfx_channel and not self._sfx_channel.get_busy():
+            self._sfx_channel.play(self.pop_sfx)
 
     def update(self, mouse_pos, dt=0):
         self.bg.update(dt)
@@ -112,27 +117,27 @@ class MainMenu:
             'back': self.back_hovered,
         }.items() if v}
         if now_hovered - self._prev_hovered:
-            self.pop_sfx.play()
+            self._play_pop()
         self._prev_hovered = now_hovered
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.submenu == "main":
                 if self.start_rect.collidepoint(event.pos):
-                    self.pop_sfx.play()
+                    self._play_pop()
                     self.submenu = "levels"
                 elif self.quit_rect.collidepoint(event.pos):
-                    self.pop_sfx.play()
+                    self._play_pop()
                     return 'quit'
             elif self.submenu == "levels":
                 if self.lvl1_rect.collidepoint(event.pos):
-                    self.pop_sfx.play()
+                    self._play_pop()
                     return 'level_1'
                 elif self.lvl2_rect.collidepoint(event.pos):
-                    self.pop_sfx.play()
+                    self._play_pop()
                     return 'level_2'
                 elif self.back_rect.collidepoint(event.pos):
-                    self.pop_sfx.play()
+                    self._play_pop()
                     self.submenu = "main"
         return None
 
