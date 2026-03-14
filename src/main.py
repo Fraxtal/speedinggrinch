@@ -1,7 +1,7 @@
 import pygame
 from level import Level
 from player import Player
-from menu import MainMenu
+from menu import MainMenu, StoryScroll
 
 
 def main():
@@ -13,6 +13,8 @@ def main():
 
     menu = MainMenu(W, H)
     state = 'menu'
+    story = None
+    pending_level = None
 
     level = None
     player = None
@@ -37,13 +39,9 @@ def main():
             if state == 'menu':
                 action = menu.handle_event(event)
                 if action == 'level_1':
-                    current_level_number = 1
-                    level = Level(1)
-                    player = Player(120, H - 200)
-                    all_sprites = pygame.sprite.Group()
-                    all_sprites.add(player)
-                    state = 'game'
-                    clock.tick()
+                    story = StoryScroll(W, H)
+                    pending_level = 1
+                    state = 'story'
                 elif action == 'level_2':
                     current_level_number = 2
                     level = Level(2)
@@ -54,6 +52,10 @@ def main():
                     clock.tick()
                 elif action == 'quit':
                     running = False
+
+            elif state == 'story':
+                if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
+                    story.dismiss()
 
             elif state == 'game':
                 if event.type == pygame.KEYDOWN:
@@ -70,6 +72,19 @@ def main():
         if state == 'menu':
             menu.update(pygame.mouse.get_pos(), dt)
             menu.draw(screen)
+
+        elif state == 'story':
+            story.update(dt)
+            menu.bg.draw(screen)  # keep the scrolling bg behind the scroll
+            story.draw(screen)
+            if story.done:
+                current_level_number = pending_level
+                level = Level(pending_level)
+                player = Player(120, H - 200)
+                all_sprites = pygame.sprite.Group()
+                all_sprites.add(player)
+                state = 'game'
+                clock.tick()
 
         elif state == 'game':
             level.update(player, dt)

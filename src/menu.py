@@ -3,6 +3,113 @@ import os
 from level import Level
 
 
+STORY_LINES = [
+    "Santa's factory is not the cheerful place",
+    "the world believes it to be.",
+    "",
+    "Every elf who works here signs a magical contract —",
+    "one that binds them to the factory forever.",
+    "",
+    "Recently, elves have begun disappearing.",
+    "Management claims they were reassigned,",
+    "but no one has ever seen them again.",
+    "",
+    "You are a toy assembly elf who has decided",
+    "to escape before you become the next missing worker.",
+    "",
+    "Tonight, while the machines run and supervisors",
+    "patrol the halls, you must sneak through",
+    "the factory unnoticed.",
+    "",
+    "Jump across obstacles. Avoid management.",
+    "Do not get caught.",
+    "",
+    "Escape the factory.",
+]
+
+
+class StoryScroll:
+    FADE_SPEED = 280   # alpha units per second
+
+    def __init__(self, screen_width, screen_height):
+        self.W = screen_width
+        self.H = screen_height
+        self.alpha = 0
+        self.fading_in  = True
+        self.fading_out = False
+        self.done = False
+        self._dismissed = False
+
+        self.title_font = pygame.font.Font(None, 42)
+        self.body_font  = pygame.font.Font(None, 30)
+        self.hint_font  = pygame.font.Font(None, 24)
+
+        # pre-render lines
+        self._title_surf = self.title_font.render("— BACKSTORY —", True, (255, 220, 120))
+        self._line_surfs = [
+            self.body_font.render(l, True, (220, 210, 190)) for l in STORY_LINES
+        ]
+        self._hint_surf = self.hint_font.render(
+            "Press any key or click to continue", True, (160, 150, 130)
+        )
+
+        # scroll panel dimensions
+        self._pad = 48
+        line_h = self.body_font.get_linesize()
+        content_h = (self.title_font.get_linesize() + 16
+                     + len(STORY_LINES) * line_h
+                     + 24 + self.hint_font.get_linesize())
+        panel_w = int(screen_width * 0.62)
+        panel_h = min(content_h + self._pad * 2, screen_height - 80)
+        self._panel_rect = pygame.Rect(0, 0, panel_w, panel_h)
+        self._panel_rect.center = (screen_width // 2, screen_height // 2)
+
+        # master surface (panel + text) composited once
+        self._surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+
+    def dismiss(self):
+        if not self._dismissed and not self.fading_out:
+            self._dismissed = True
+            self.fading_in  = False
+            self.fading_out = True
+
+    def update(self, dt):
+        step = self.FADE_SPEED * dt
+        if self.fading_in:
+            self.alpha = min(255, self.alpha + step)
+            if self.alpha >= 255:
+                self.fading_in = False
+        elif self.fading_out:
+            self.alpha = max(0, self.alpha - step)
+            if self.alpha <= 0:
+                self.done = True
+
+    def draw(self, screen):
+        a = int(self.alpha)
+        pw, ph = self._panel_rect.size
+
+        self._surf.fill((0, 0, 0, 0))
+        # parchment background
+        pygame.draw.rect(self._surf, (30, 20, 10, 210), (0, 0, pw, ph), border_radius=12)
+        pygame.draw.rect(self._surf, (180, 140, 80, 180), (0, 0, pw, ph), 2, border_radius=12)
+
+        # title
+        tx = (pw - self._title_surf.get_width()) // 2
+        self._surf.blit(self._title_surf, (tx, self._pad))
+
+        line_h = self.body_font.get_linesize()
+        y = self._pad + self.title_font.get_linesize() + 16
+        for surf in self._line_surfs:
+            lx = (pw - surf.get_width()) // 2
+            self._surf.blit(surf, (lx, y))
+            y += line_h
+
+        hx = (pw - self._hint_surf.get_width()) // 2
+        self._surf.blit(self._hint_surf, (hx, ph - self._pad))
+
+        self._surf.set_alpha(a)
+        screen.blit(self._surf, self._panel_rect)
+
 class MenuBackground:
     SCROLL_SPEED = 180   # px per second
     FADE_DURATION = 1.2  # seconds to fade out / fade in
