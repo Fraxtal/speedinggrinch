@@ -10,6 +10,7 @@ class Level:
         self.platforms = []
         self.spike_rects = []
         self.machine_rects = []
+        self.enemies = []
         self.goal_rect = None
         self.goal_timer = 0.0
         self.level_number = level_number
@@ -93,41 +94,69 @@ class Level:
     def _create_layout_1(self):
         T = 32
         H = self.screen_height
-        # Ground: snapped to bottom, 3 tiles tall
         ground_y = H - T * 3
         self.platforms = [pygame.Rect(0, ground_y, self.world_width, T * 3)]
-        # Floating platforms: (x, y, width_in_tiles) — all snapped to 32px grid
-        # Heights chosen so jumps feel natural; gaps are jumpable with a dash
+
+        wall_defs = [
+            (700,   5),
+            (1500,  7),
+            (2400,  6),
+            (3300,  7),
+            (4200,  5),
+            (5100,  6),
+        ]
+        for wx, wh in wall_defs:
+            self.platforms.append(pygame.Rect(wx, ground_y - wh * T, T * 2, wh * T))
+
         plat_defs = [
-            # x,    y,              tiles_wide
-            (288,   H - T*8,        5),   # low step up
-            (640,   H - T*9,        6),   # medium rise
-            (1024,  H - T*9,        5),   # step down
-            (1376,  H - T*11,       5),   # higher ledge
-            (1760,  H - T*8,        6),   # mid platform
-            (2176,  H - T*13,       4),   # tall jump target
-            (2528,  H - T*9,        5),   # descend
-            (2912,  H - T*10,       6),   # low run section
-            (3296,  H - T*11,       5),   # back up
-            (3680,  H - T*8,        6),   # mid
-            (4064,  H - T*14,       4),   # high challenge
-            (4416,  H - T*10,       5),   # step down
-            (4800,  H - T*7,        6),   # low approach
-            (5184,  H - T*12,       5),   # final climb
-            (5568,  H - T*9,        5),   # near goal
+            (400,   H - T*8,   4),
+            (768,   H - T*12,  4),   # over wall 1
+            (1100,  H - T*8,   4),
+            (1568,  H - T*14,  4),   # over wall 2
+            (1900,  H - T*9,   4),
+            (2468,  H - T*13,  4),   # over wall 3
+            (2800,  H - T*8,   4),
+            (3368,  H - T*14,  4),   # over wall 4
+            (3700,  H - T*9,   4),
+            (4268,  H - T*11,  4),   # over wall 5
+            (4600,  H - T*8,   4),
+            (5168,  H - T*13,  4),   # over wall 6
+            (5568,  H - T*9,   5),   # near goal
         ]
         for x, y, tw in plat_defs:
             self.platforms.append(pygame.Rect(x, y, tw * T, T * 2))
 
-        # Randomly place machines on platforms (skip ground and first platform)
+        # Machines on floating platforms
         rng = random.Random(99)
-        MW, MH = 36, 48  # machine size
-        for plat in self.platforms[2:]:  # skip ground + first platform (spawn area)
+        MW, MH = 36, 48
+        num_walls = len(wall_defs)
+        for plat in self.platforms[num_walls + 3:]:  # skip ground, walls, first 2 floaters
             if plat.width < MW * 2:
                 continue
-            if rng.random() < 0.55:  # ~55% chance per platform
+            if rng.random() < 0.30:
                 mx = rng.randint(plat.x + 8, plat.x + plat.width - MW - 8)
                 self.machine_rects.append(pygame.Rect(mx, plat.y - MH, MW, MH))
+
+        # Ground enemies between walls
+        erng = random.Random(77)
+        wall_xs = [wx for wx, _ in wall_defs]
+        segments = list(zip([0] + wall_xs, wall_xs + [self.world_width - 200]))
+        for seg_start, seg_end in segments[1:]:
+            seg_w = seg_end - seg_start - T * 2
+            if seg_w < 80:
+                continue
+            if erng.random() < 0.5:
+                patrol = pygame.Rect(seg_start + T * 2, ground_y, seg_w, T * 3)
+                ex = erng.randint(patrol.x, patrol.right - 28)
+                self.enemies.append((ex, patrol))
+
+        # Floating platform enemies
+        for plat in self.platforms[num_walls + 4:]:
+            if plat.width < 120:
+                continue
+            if erng.random() < 0.25:
+                ex = erng.randint(plat.x + 10, plat.x + plat.width - 38)
+                self.enemies.append((ex, plat))
 
     def _create_layout_2(self):
         W = self.screen_width

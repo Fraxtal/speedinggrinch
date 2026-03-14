@@ -2,6 +2,7 @@ import pygame
 from level import Level
 from player import Player
 from menu import MainMenu, StoryScroll
+from enemy import Enemy
 
 
 def main():
@@ -24,6 +25,7 @@ def main():
     overlay_timer = 0.0
     OVERLAY_HOLD = 2.5
     prev_touching_machine = False
+    enemies = []
 
     overlay_font_big = pygame.font.Font(None, 100)
     overlay_font_small = pygame.font.Font(None, 44)
@@ -67,8 +69,8 @@ def main():
                     if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                         player.try_dash(player.facing)
 
-            elif state in ('win', 'dead'):
-                if event.type == pygame.KEYDOWN:
+            elif state in ('win', 'dead', 'caught'):
+                if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
                     state = 'menu'
                     overlay_timer = 0.0
 
@@ -86,6 +88,7 @@ def main():
                 player = Player(120, H - 200)
                 all_sprites = pygame.sprite.Group()
                 all_sprites.add(player)
+                enemies = [Enemy(x, plat) for x, plat in level.enemies]
                 state = 'game'
                 clock.tick()
 
@@ -93,12 +96,19 @@ def main():
             level.update(player, dt)
             all_sprites.update(dt, level)
 
+            for enemy in enemies:
+                enemy.update(dt)
+                if enemy.can_see(player.hitbox) and not player.dashing:
+                    state = 'caught'
+                    overlay_timer = 0.0
+                    break
+
             if level.check_spike_collision(player.hitbox):
                 player.hurt(player.facing)
 
             touching_machine = level.check_machine_collision(player.hitbox)
             if touching_machine and not prev_touching_machine and not player.dashing:
-                player.vel.x = 0
+                player.vel.x *= 0.2
                 player.hurt(player.facing)
             prev_touching_machine = touching_machine
 
@@ -117,6 +127,9 @@ def main():
             player.draw_trail(screen, level.scroll, scroll_y)
             player.draw_stamina_bar(screen, level.scroll, scroll_y)
             # player.draw_debug(dt, screen, level.scroll, scroll_y)
+
+            for enemy in enemies:
+                enemy.draw(screen, level.scroll)
 
             player_screen_rect = player.rect.copy()
             player_screen_rect.x -= int(level.scroll)
@@ -143,6 +156,19 @@ def main():
             screen.blit(overlay, (0, 0))
             title_surf = overlay_font_big.render("YOU DIED", True, (255, 80, 80))
             sub_surf = overlay_font_small.render("Press any key to try again", True, (220, 220, 220))
+            screen.blit(title_surf, title_surf.get_rect(center=(W // 2, H // 2 - 40)))
+            screen.blit(sub_surf, sub_surf.get_rect(center=(W // 2, H // 2 + 50)))
+            if overlay_timer >= OVERLAY_HOLD:
+                state = 'menu'
+                overlay_timer = 0.0
+
+        elif state == 'caught':
+            overlay_timer += dt
+            overlay = pygame.Surface((W, H), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 160))
+            screen.blit(overlay, (0, 0))
+            title_surf = overlay_font_big.render("CAUGHT!", True, (255, 200, 0))
+            sub_surf = overlay_font_small.render("Press any key to return to menu", True, (220, 220, 220))
             screen.blit(title_surf, title_surf.get_rect(center=(W // 2, H // 2 - 40)))
             screen.blit(sub_surf, sub_surf.get_rect(center=(W // 2, H // 2 + 50)))
             if overlay_timer >= OVERLAY_HOLD:
