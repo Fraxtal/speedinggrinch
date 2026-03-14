@@ -36,6 +36,8 @@ class Level:
                 self.bg_image = pygame.Surface((1280, 720))
                 self.bg_image.fill((30, 30, 80))
             self._load_tiles()
+            self.gift_img = pygame.image.load(os.path.join("assets", "background", "giftobstacle.png")).convert_alpha()
+            self.gift_img = pygame.transform.scale(self.gift_img, (36, 48))
         else:
             self.world_width = self.screen_width
             self.world_height = 4000
@@ -226,12 +228,7 @@ class Level:
         for m in self.machine_rects:
             sx = m.x - int(self.scroll)
             # body
-            pygame.draw.rect(surf, (80, 60, 60), (sx, m.y, m.width, m.height), border_radius=4)
-            pygame.draw.rect(surf, (200, 80, 40), (sx, m.y, m.width, m.height), 2, border_radius=4)
-            # spinning blade indicator (two crossed lines)
-            cx, cy = sx + m.width // 2, m.y + m.height // 2
-            pygame.draw.line(surf, (255, 120, 40), (cx - 10, cy - 10), (cx + 10, cy + 10), 3)
-            pygame.draw.line(surf, (255, 120, 40), (cx + 10, cy - 10), (cx - 10, cy + 10), 3)
+            surf.blit(self.gift_img, (sx, m.y))
 
     def _draw_tiled_platform(self, surf, p):
         T = 32

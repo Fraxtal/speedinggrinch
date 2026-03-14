@@ -16,7 +16,7 @@ def _load_animations(scale=0.1, w_bound=5, h_bound=15):
         img = img.subsurface(pygame.Rect(w_bound, h_bound, w - 2 * w_bound, h - 2 * h_bound))
         # tint red to distinguish from player
         tint = pygame.Surface(img.get_size(), pygame.SRCALPHA)
-        tint.fill((100, 0, 0, 40))
+        tint.fill((50, 0, 0, 0))
         img = img.copy()
         img.blit(tint, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
         animations[folder_name].append(img)
@@ -90,4 +90,4 @@ class Enemy:
             a = base_angle - half_rad + (2 * half_rad * i / 8)
             pts.append((ex + math.cos(a) * self.DETECT_RANGE,
                         ey + math.sin(a) * self.DETECT_RANGE))
-        pygame.draw.polygon(surf, (255, 60, 60, 40), pts)
+        pygame.draw.polygon(surf, (255, 80, 80, 255), pts)
