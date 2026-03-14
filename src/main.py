@@ -2,7 +2,7 @@ import pygame
 import os
 from level import Level
 from player import Player
-from menu import MainMenu, StoryScroll
+from menu import MainMenu, StoryScroll, STORY_LINES_2, SettingsScreen, PauseMenu, DEFAULT_CONTROLS
 from enemy import Enemy
 
 def main():
@@ -14,6 +14,9 @@ def main():
     menu = MainMenu(W, H)
     state = 'menu'
     story = None
+    pause_menu = None
+    frozen_frame = None
+    settings_screen = None
     pending_level = None
     level = None
     player = None
@@ -24,11 +27,13 @@ def main():
     prev_touching_machine = False
     enemies = []
     levels_complete = set()
+    controls = dict(DEFAULT_CONTROLS)
+    music_volume = 0.5
     overlay_font_big = pygame.font.Font(None, 100)
     overlay_font_small = pygame.font.Font(None, 44)
     running = True
     pygame.mixer.music.load(os.path.join("assets", "Sound", "menu_music.mp3"))
-    pygame.mixer.music.set_volume(0.5)
+    pygame.mixer.music.set_volume(music_volume)
     pygame.mixer.music.play(-1)
     while running:
         dt = clock.tick(60) / 1000.0
@@ -38,16 +43,20 @@ def main():
             if state == 'menu':
                 action = menu.handle_event(event)
                 if action == 'level_1':
-                    story = StoryScroll(W, H)
+                    story = StoryScroll(W, H, bg_level=1)
                     pending_level = 1
                     state = 'story'
                     prev_touching_machine = False
                 elif action == 'level_2':
-                    story = StoryScroll(W, H)
+                    story = StoryScroll(W, H, lines=STORY_LINES_2, bg_level=2)
                     pending_level = 2
                     state = 'story'
                     prev_touching_machine = False
-                    prev_touching_machine = False
+                elif action == 'levels':
+                    menu.submenu = 'levels'
+                elif action == 'settings':
+                    settings_screen = SettingsScreen(W, H, controls, music_volume)
+                    state = 'settings'
                 elif action == 'quit':
                     running = False
             elif state == 'story':
@@ -55,10 +64,28 @@ def main():
                     story.dismiss()
             elif state == 'game':
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
+                    if event.key == pygame.K_ESCAPE:
+                        pause_menu = PauseMenu(W, H)
+                        frozen_frame = screen.copy()
+                        state = 'paused'
+                    elif event.key == controls['jump']:
                         player.jump()
-                    if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+                    elif event.key == controls['dash']:
                         player.try_dash(player.facing)
+            elif state == 'paused':
+                result = pause_menu.handle_event(event)
+                if result == 'resume':
+                    state = 'game'
+                elif result == 'settings':
+                    settings_screen = SettingsScreen(W, H, controls, music_volume, return_to='paused')
+                    state = 'settings'
+                elif result == 'quit_to_menu':
+                    state = 'menu'
+                    overlay_timer = 0.0
+                    menu = MainMenu(W, H, both_complete=(levels_complete == {1, 2}))
+                    pygame.mixer.music.load(os.path.join("assets", "Sound", "menu_music.mp3"))
+                    pygame.mixer.music.set_volume(music_volume)
+                    pygame.mixer.music.play(-1)
             elif state in ('win', 'dead', 'caught'):
                 if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
                     state = 'menu'
@@ -66,12 +93,19 @@ def main():
                     menu = MainMenu(W, H, both_complete=(levels_complete == {1, 2}))
                     pygame.mixer.music.load(os.path.join("assets", "Sound", "menu_music.mp3"))
                     pygame.mixer.music.play(-1)
+            elif state == 'settings':
+                result = settings_screen.handle_event(event)
+                if result == 'back':
+                    controls = settings_screen.controls
+                    music_volume = settings_screen.music_volume
+                    state = settings_screen.return_to
         if state == 'menu':
             menu.update(pygame.mouse.get_pos(), dt)
             menu.draw(screen)
         elif state == 'story':
             story.update(dt)
-            menu.bg.draw(screen)  # keep the scrolling bg behind the scroll
+            story.bg.update(dt)
+            story.bg.draw(screen)
             story.draw(screen)
             if story.done:
                 current_level_number = pending_level
@@ -87,7 +121,7 @@ def main():
                 state = 'game'
         elif state == 'game':
             level.update(player, dt)
-            all_sprites.update(dt, level)
+            all_sprites.update(dt, level, controls)
             for enemy in enemies:
                 enemy.update(dt)
                 if enemy.can_see(player.hitbox) and not player.dashing:
@@ -104,7 +138,12 @@ def main():
             prev_touching_machine = touching_machine
             if level.check_goal_collision(player.hitbox):
                 levels_complete.add(current_level_number)
-                state = 'win'
+                if current_level_number == 1:
+                    story = StoryScroll(W, H, lines=STORY_LINES_2, bg_level=2)
+                    pending_level = 2
+                    state = 'story'
+                else:
+                    state = 'win'
                 overlay_timer = 0.0
 
             if player.hitbox.top > level.world_height + 200:
@@ -159,6 +198,13 @@ def main():
             if overlay_timer >= OVERLAY_HOLD:
                 state = 'menu'
                 overlay_timer = 0.0
+        elif state == 'paused':
+            pause_menu.update(pygame.mouse.get_pos())
+            pause_menu.draw(screen, frozen_frame)
+        elif state == 'settings':
+            settings_screen.update(pygame.mouse.get_pos())
+            bg_arg = frozen_frame if settings_screen.return_to == 'paused' else menu.bg
+            settings_screen.draw(screen, bg_arg)
         pygame.display.flip()
     pygame.quit()
 

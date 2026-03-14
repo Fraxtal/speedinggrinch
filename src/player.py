@@ -2,6 +2,7 @@ import pygame
 from pathlib import Path
 from enum import Enum, auto
 import collections
+from menu import DEFAULT_CONTROLS
 
 class PlayerState(Enum):
     IDLE = auto()
@@ -87,12 +88,12 @@ class Player(pygame.sprite.Sprite):
         self.run_sound_time = self.run_sound.get_length()
         self._run_sound_timer = 0.0
 
-    def handle_input(self, keys):
+    def handle_input(self, keys, controls):
         self.acc.x = 0
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+        if keys[controls['left']]:
             self.acc.x = -self.speed
             self.facing = -1
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+        if keys[controls['right']]:
             self.acc.x = self.speed
             self.facing = 1
 
@@ -126,9 +127,9 @@ class Player(pygame.sprite.Sprite):
             self.hurt_sound.play()
             self.facing = abs(dir_x) / dir_x
 
-    def update(self, dt, level):
+    def update(self, dt, level, controls=None):
         keys = pygame.key.get_pressed()
-        self.handle_input(keys)
+        self.handle_input(keys, controls or DEFAULT_CONTROLS)
         # apply horizontal acceleration and friction
         self.acc.y = self.gravity
         self.acc.x += self.vel.x * self.friction * 0.001
