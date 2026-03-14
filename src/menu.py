@@ -53,6 +53,9 @@ class StoryScroll:
             "Press any key or click to continue", True, (160, 150, 130)
         )
 
+        self._sfx = pygame.mixer.Sound(os.path.join("main_menu", "sfx", "pageflipsfx.mp3"))
+        self._sfx.play()
+
         # scroll panel dimensions
         self._pad = 48
         line_h = self.body_font.get_linesize()
@@ -72,6 +75,7 @@ class StoryScroll:
             self._dismissed = True
             self.fading_in  = False
             self.fading_out = True
+            self._sfx.play()
 
     def update(self, dt):
         step = self.FADE_SPEED * dt
