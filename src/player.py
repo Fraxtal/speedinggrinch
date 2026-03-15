@@ -71,10 +71,26 @@ class Player(pygame.sprite.Sprite):
         self._dash_cd_timer = 0.0
         self.dashing = False
         # stamina bar
-        self.stamina_bar = pygame.Surface((self.hitbox.width, 5), pygame.SRCALPHA)
-        self.stamina_bar.fill((125, 255, 125, 255))
-        self.stamina_rect = self.stamina_bar.get_rect()
-        self.stamina_rect.bottomleft = self.hitbox.topleft
+        self.stamina_rect = pygame.Rect(90, 55, 320, 10)
+        # health bar
+        self.max_hp = 100
+        self.hp = 100
+        self.prev_hp = 100
+        self.temp_hp = 100
+        self.health_max_width = 380
+        self.health_rect = pygame.Rect(90, 30, 380, 15)
+        # status
+        self.status_overlay = pygame.Surface((480, 70), pygame.SRCALPHA)
+        self.status_overlay.fill((0, 0, 0, 120))
+        self.status_rect = self.status_overlay.get_rect()
+        self.status_rect.topleft = (10, 10)
+        self.status_font = pygame.font.Font(None, 20)
+        self.hp_text = self.status_font.render("HP: ", True, (255, 255, 255))
+        self.hp_text_rect = self.hp_text.get_rect()
+        self.hp_text_rect.topleft = (self.health_rect.x - 70, self.health_rect.y - 2)
+        self.stamina_text = self.status_font.render("Stamina: ", True, (255, 255, 255))
+        self.stamina_text_rect = self.hp_text.get_rect()
+        self.stamina_text_rect.topleft = (self.stamina_rect.x - 70, self.stamina_rect.y - 2)
         # hurt
         self.hp = 100
         self.hurt_sound = pygame.mixer.Sound("assets\\audio\\hurt.mp3")
@@ -150,7 +166,14 @@ class Player(pygame.sprite.Sprite):
             if self._hurt_timer <= 0:
                 self.hurting = False
             elif not self.dashing:
-                self.vel.x = self.facing * 2
+                self.vel.x = self.facing * -50
+                if self.frame_count % 3 == 0:
+                    self.image.fill((150, 0, 0), special_flags=pygame.BLEND_RGB_ADD)
+        # update temp hp for animation
+        if self.temp_hp > self.hp:
+            self.temp_hp -= 1.5
+            if self.temp_hp < self.hp:
+                self.temp_hp = self.hp
         self.vel.y += self.acc.y * dt
         # simple Euler position update
         self.pos.x += self.vel.x * dt
@@ -236,8 +259,30 @@ class Player(pygame.sprite.Sprite):
             trail_rect = trail_img.get_rect(center=(pos[0] - camera_scroll, pos[1] - camera_scroll_y))
             screen.blit(trail_img, trail_rect)
             
-    def draw_stamina_bar(self, screen, camera_scroll, camera_scroll_y=0):
-        self.stamina_rect.bottomleft = (self.hitbox.x - camera_scroll, self.hitbox.y - camera_scroll_y)
+    def draw_status_bar(self, screen):
+        # background
+        screen.blit(self.status_overlay, self.status_rect)
+        # caption
+        screen.blit(self.hp_text, self.hp_text_rect)
+        screen.blit(self.stamina_text, self.stamina_text_rect)
+        # temp hp bar (for smooth view)
+        if self.temp_hp > self.hp:
+            temp_hp_length = self.temp_hp / self.max_hp * self.health_max_width
+            temp_hp_rect = pygame.Rect(self.health_rect.x,
+                                    self.health_rect.y,
+                                    temp_hp_length,
+                                    self.health_rect.height)
+            pygame.draw.rect(screen, (255, 200, 0, 255), temp_hp_rect)
+        # hp bar
+        if (self.hp != self.prev_hp):
+            ratio = self.hp / self.max_hp
+            self.health_rect = pygame.Rect(self.health_rect.x, 
+                                    self.health_rect.y, 
+                                    self.health_max_width * ratio, 
+                                    self.health_rect.height)
+            self.prev_hp = self.hp
+        pygame.draw.rect(screen, (255, 125, 125, 255), self.health_rect)
+        # stamina bar (dash cd)
         if (self._dash_cd_timer > 0):
             ratio = (self.dash_cooldown - self._dash_cd_timer) / self.dash_cooldown
             cd_progress = int(ratio * 255)
@@ -247,17 +292,6 @@ class Player(pygame.sprite.Sprite):
         else:
             pygame.draw.rect(screen, (0, 255, 0, 255), self.stamina_rect)
             pass
-
-    # draw debug info
-    def draw_debug(self, dt, screen, camera_scroll, camera_scroll_y=0):
-        if self._debug_info_cooldown_timer <= 0:
-            self._debug_info_cooldown_timer = self.debug_info_cooldown
-            self.debug_text = self.debug_font.render(f"hurt_cd: {round(self._hurt_cd_timer, 2)}  dash_cd: {round(self._dash_cd_timer, 2)}", True, (255, 125, 125))
-        else:
-            self._debug_info_cooldown_timer -= dt
-        self.debug_text_rect.midbottom = self.hitbox.midright
-        screen.blit(self.hitbox_overlay, (self.hitbox.x - camera_scroll, self.hitbox.y - camera_scroll_y))
-        screen.blit(self.debug_text, (self.debug_text_rect.x - camera_scroll, self.debug_text_rect.y - camera_scroll_y))
 
     def _collide_axis(self, platforms, axis):
         for p in platforms:
