@@ -10,14 +10,14 @@ You play as a toy assembly elf attempting to escape Santa's factory before you b
 - Python 3.10+
 - pygame-ce
 
-Install dependencies:
+Install dependencies by running this command:
 
 ```bash
 pip install -r requirements.txt
 ```
 
 ## How to run the game
-Navigate into the `src/` directory and run `main.py` directly:
+Navigate into the "src" directory and run "main.py" directly:
 
 ```bash
 cd src
