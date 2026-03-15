@@ -71,7 +71,7 @@ class Player(pygame.sprite.Sprite):
         self._dash_cd_timer = 0.0
         self.dashing = False
         # stamina bar
-        self.stamina_rect = pygame.Rect(90, 55, 320, 10)
+        self.stamina_rect = pygame.Rect(90, 55, 380, 10)
         # health bar
         self.max_hp = 100
         self.hp = 100
