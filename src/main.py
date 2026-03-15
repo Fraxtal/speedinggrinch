@@ -126,7 +126,7 @@ def main():
                 enemies = [Enemy(x, plat) for x, plat in level.enemies]
                 clock.tick()
                 pygame.mixer.music.load(os.path.join("assets", "Sound", "game_music.mp3"))
-                pygame.mixer.music.set_volume(0.4)
+                pygame.mixer.music.set_volume(0.05)
                 pygame.mixer.music.play(-1)
                 state = 'game'
         elif state == 'game':
